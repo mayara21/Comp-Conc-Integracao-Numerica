@@ -16,7 +16,7 @@ long double f2(long double x) {
 }
 
 long double f3(long double x){
-    return sqrt(1 - pow(x,4));
+    return sqrt(1 + pow(x,4));
 }
 
 long double f4(long double x){ 
