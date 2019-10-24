@@ -3,7 +3,8 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "../timer.h"
 
 #define TAM 10000
 
@@ -51,6 +52,7 @@ Intervalo removeBuffer() {
 void insereBuffer(Intervalo intervalo) {
     pthread_mutex_lock(&mutex);
     while(proximo + 1 >= TAM) {
+        printf("Esperando\n");
         pthread_cond_wait(&cond_ins, &mutex);
     }
 
@@ -132,6 +134,7 @@ int main (int argc, char *argv[]) {
     long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7};
     long double integral; // variavel para armazenar valor calculado da integral da funcao
     //long double inicio, fim;
+    double tempoInicio, tempoFim, tempoInicializacao, tempoProcessamento, tempoFinalizacao;
     int i, *tid;
     char escolha[2];
 
@@ -164,6 +167,7 @@ int main (int argc, char *argv[]) {
         break;
     }
 
+    GET_TIME(tempoInicio);
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
     resultados = (long double *) malloc(sizeof(long double) * nthreads);
 
@@ -174,12 +178,16 @@ int main (int argc, char *argv[]) {
     buffer[proximo] = entrada;
     proximo++;
 
+    GET_TIME(tempoFim);
+
+    tempoInicializacao = tempoFim - tempoInicio;
+
+    GET_TIME(tempoInicio);
     //Criar threads
     for(i = 0; i < nthreads; i++) {
         tid = malloc(sizeof(int)); if(tid == NULL) return -1;
         *tid = i;
         pthread_create(&threads[i], NULL, seiLa, (void *) tid);
-        printf("Criei a thread %d\n", *tid);
     }
 
     //Fazer main esperar
@@ -192,15 +200,24 @@ int main (int argc, char *argv[]) {
     for(i = 0; i < nthreads; i++) {
         integral += resultados[i];
     }
+    GET_TIME(tempoFim);
 
-    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
+    tempoProcessamento = tempoFim - tempoInicio;
 
+    GET_TIME(tempoInicio);
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond_ins);
     pthread_cond_destroy(&cond_rem);
 
     free(threads);
     free(resultados);
+    GET_TIME(tempoFim);
+    tempoFinalizacao = tempoFim - tempoInicio;
+
+    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
+    printf("Tempo de inicializacao: %lf\n", tempoInicializacao);
+    printf("Tempo de processamento: %lf\n", tempoProcessamento);
+    printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
 
     pthread_exit(NULL);
 
