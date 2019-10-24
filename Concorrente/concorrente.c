@@ -7,10 +7,10 @@
 
 #define TAM 10000
 
-typedef struct Intervalo {
-    int inicio;
-    int fim;
-};
+typedef struct _Intervalo {
+    long double inicio;
+    long double fim;
+} Intervalo;
 
 pthread_mutex_t mutex;
 pthread_cond_t cond_ins, cond_rem;
@@ -18,7 +18,7 @@ long double (*funcao)(long double);
 long double *resultados;
 long double erroPermitido;
 Intervalo buffer[TAM];
-int topo = 0;
+int proximo = 0;
 int threadsTrabalhando = 0;
 int nthreads;
 
@@ -27,12 +27,21 @@ Intervalo removeBuffer() {
 
     pthread_mutex_lock(&mutex);
     threadsTrabalhando++;
-    while(topo == 0) {
+    while(proximo == 0) {
+        threadsTrabalhando--;
+        if(threadsTrabalhando == 0) {
+            retorno.inicio = 0;
+            retorno.fim = 0;
+            pthread_cond_broadcast(&cond_rem);
+            pthread_mutex_unlock(&mutex);
+            return retorno;
+        }
         pthread_cond_wait(&cond_rem, &mutex);
+        threadsTrabalhando++;
     }
 
-    retorno = buffer[topo];
-    topo--;
+    retorno = buffer[proximo - 1];
+    proximo--;
     pthread_cond_broadcast(&cond_ins);
     pthread_mutex_unlock(&mutex);
 
@@ -40,19 +49,23 @@ Intervalo removeBuffer() {
 }
 
 void insereBuffer(Intervalo intervalo) {
-    pthread_mutex_lock(&mutex)
-    while(topo + 1 >= TAM) {
+    pthread_mutex_lock(&mutex);
+    while(proximo + 1 >= TAM) {
         pthread_cond_wait(&cond_ins, &mutex);
     }
 
-    buffer[topo] = intervalo;
-    topo++;
+    buffer[proximo] = intervalo;
+    proximo++;
     pthread_cond_broadcast(&cond_rem);
     pthread_mutex_unlock(&mutex);
 }
 
+// funcao para calculo do ponto medio entre dois pontos a e b
+long double pegarPontoMedio(long double inicio, long double fim) {
+    return ((inicio + fim)/2);
+}
+
 void fazMagia(Intervalo intervalo, int id) {
-    Intervalo temp;
     long double inicio, meio, fim;
     long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
@@ -73,6 +86,7 @@ void fazMagia(Intervalo intervalo, int id) {
     erro = fabsl(areaTotal - (areaEsq + areaDir));
 
     if(erro > erroPermitido) {
+        Intervalo temp;
         temp.inicio = inicio;
         temp.fim = meio;
         insereBuffer(temp);
@@ -85,57 +99,40 @@ void fazMagia(Intervalo intervalo, int id) {
 }
 
 void *seiLa(void *args) {
-    int *id = (int *) args
+    int id = *(int *) args;
     Intervalo intervalo;
 
     while(1) {
-        if(topo == 0 && threadsTrabalhando == 0) break;
+        pthread_mutex_lock(&mutex);
+        if(proximo == 0 && threadsTrabalhando == 0) {
+            pthread_cond_broadcast(&cond_rem);
+            pthread_mutex_unlock(&mutex);
+            break;
+        }
+        pthread_mutex_unlock(&mutex);
 
         intervalo = removeBuffer();
+        if(intervalo.inicio == 0 && intervalo.fim == 0) {
+            break;
+        }
         fazMagia(intervalo, id);
+
+        pthread_mutex_lock(&mutex);
         threadsTrabalhando--;
+        pthread_mutex_unlock(&mutex);
     }
 
     free(args);
-    pthread_exit(NULL)
-}
-
-// funcao para calculo do ponto medio entre dois pontos a e b
-long double pegarPontoMedio(long double inicio, long double fim) {
-    return ((inicio + fim)/2);
-}
-
-funcao recursiva para integracao numerica usando regra do ponto medio/metodo do retangulo
-long double integracaoRetangular(long double inicio, long double fim, long double (*funcao)(long double)) {
-    long double meio;
-    long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
-    long double areaTotal, areaEsq, areaDir; // areas dos retangulos
-    long double erro;
-
-    meio = pegarPontoMedio(inicio, fim);
-    alturaTotal = funcao(meio); // altura referente ao retangulo maior
-    alturaEsq = funcao(pegarPontoMedio(inicio, meio));
-    alturaDir = funcao(pegarPontoMedio(meio, fim));
-
-    areaTotal = (fim - inicio) * alturaTotal;
-    areaEsq = (meio - inicio) * alturaEsq;
-    areaDir = (fim - meio) * alturaDir;
-
-    // calculo do modulo da diferenca entre a area do retangulo maior e a soma das areas dos retangulos menores
-    erro = fabsl(areaTotal - (areaEsq + areaDir));
-    // caso essa diferenca seja superior ao erro permitido, calcula-se a area dos intervalos [inicio, meio] e [meio, fim]
-    if(erro > erroPermitido) {
-        areaTotal = integracaoRetangular(inicio, meio, funcao) + integracaoRetangular(meio, fim, funcao); // sendo a nova area "maior" a soma dessas duas areas
-    }
-    // do contrario, retorna o valor atual da area total
-    return areaTotal;
+    pthread_exit(NULL);
 }
 
 int main (int argc, char *argv[]) {
     pthread_t *threads;
     Intervalo entrada;
+    long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7};
     long double integral; // variavel para armazenar valor calculado da integral da funcao
     //long double inicio, fim;
+    int i, *tid;
     char escolha[2];
 
     if(argc < 5) {
@@ -146,7 +143,9 @@ int main (int argc, char *argv[]) {
     entrada.inicio = strtold(argv[1], NULL);
     entrada.fim = strtold(argv[2], NULL);
     erroPermitido = strtold(argv[3], NULL);
-    nthreads = atoi(argv[4], NULL);
+    nthreads = atoi(argv[4]);
+
+    printf("Entrada: %Lf %Lf\n", entrada.inicio, entrada.fim);
 
     // loop para forcar usuario a escolher uma funcao dentre as disponiveis
     while (1) {
@@ -163,48 +162,40 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
-        // determinar qual funcao foi escolhida
-        switch (escolha[1]) {
-            case '1':
-                funcao = &f1;
-                break;
-            case '2':
-                funcao = &f2;
-                break;
-            case '3':
-                funcao = &f3;
-                break;
-            case '4':
-                funcao = &f4;
-                break;
-            case '5':
-                funcao = &f5;
-                break;
-            case '6':
-                funcao = &f6;
-                break;
-            case '7':
-                funcao = &f7;
-                break;
-        }
-
+        funcao = funcoes[(escolha[1] - '0') - 1];
         break;
     }
 
-    threads = (pthread_t *) malloc(sizeof(pthread_t) * nThreads);
+    threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
+    resultados = (long double *) malloc(sizeof(long double) * nthreads);
 
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond_ins, NULL);
     pthread_cond_init(&cond_rem, NULL);
 
-    buffer[topo] = entrada;
-    topo++;
+    buffer[proximo] = entrada;
+    proximo++;
 
+    printf("Buffer: %Lf %Lf\n", buffer[0].inicio, buffer[0].fim);
     //Criar threads
+    for(i = 0; i < nthreads; i++) {
+        tid = malloc(sizeof(int)); if(tid == NULL) return -1;
+        *tid = i;
+        pthread_create(&threads[i], NULL, seiLa, (void *) tid);
+        printf("Criei a thread %d\n", *tid);
+    }
 
     //Fazer main esperar
-
+    for(i = 0; i < nthreads; i++) {
+        pthread_join(threads[i], NULL);
+    }
     // fazer main somar resultados
+    integral = 0;
+    for(i = 0; i < nthreads; i++) {
+        integral += resultados[i];
+    }
+
+    printf("Valor aproximado da Integral da funcao: %Lf\n", integral);
     // rezar pra nao ficar muito ruim e ter que arranjar alguma forma de ordenar a soma dos floats;
 
     //dar free no necessario
@@ -212,6 +203,11 @@ int main (int argc, char *argv[]) {
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond_ins);
     pthread_cond_destroy(&cond_rem);
+
+    free(threads);
+    free(resultados);
+
+    pthread_exit(NULL);
 
     return 0;
 }
