@@ -71,37 +71,10 @@ int main (int argc, char *argv[]) {
 
         funcao = funcoes[(escolha[1] - '0') - 1];
         break;
-
-        // determinar qual funcao foi escolhida
-        // switch (escolha[1]) {
-        //     case '1':
-        //         funcao = &f1;
-        //         break;
-        //     case '2':
-        //         funcao = &f2;
-        //         break;
-        //     case '3':
-        //         funcao = &f3;
-        //         break;
-        //     case '4':
-        //         funcao = &f4;
-        //         break;
-        //     case '5':
-        //         funcao = &f5;
-        //         break;
-        //     case '6':
-        //         funcao = &f6;
-        //         break;
-        //     case '7':
-        //         funcao = &f7;
-        //         break;
-        // }
-        //
-        // break;
      }
 
     integral = integracaoRetangular(inicio, fim);
-    printf("Valor aproximado da Integral da funcao: %Lf\n", integral);
+    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
 
     return 0;
 }
