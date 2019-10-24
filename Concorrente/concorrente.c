@@ -21,6 +21,8 @@ long double *resultados;
 long double erroPermitido;
 Intervalo buffer[MAX_THREADS][TAM];
 int *proximo;
+int *out;
+int *in;
 int threadsTrabalhando = 0;
 int nthreads;
 
@@ -49,8 +51,9 @@ Intervalo removeBuffer(int id) {
         threadsTrabalhando++;
     }
 
-    retorno = buffer[id][proximo[id] - 1];
+    retorno = buffer[id][out[id]];
     proximo[id]--;
+    out[id] = (out[id] + 1) % TAM;
     pthread_cond_broadcast(&cond_ins);
     pthread_mutex_unlock(&mutex);
 
@@ -63,8 +66,9 @@ void insereBuffer(Intervalo intervalo, int id) {
         pthread_cond_wait(&cond_ins, &mutex);
     }
 
-    buffer[id][proximo[id]] = intervalo;
+    buffer[id][in[id]] = intervalo;
     proximo[id]++;
+    in[id] = (in[id] + 1) % TAM;
     pthread_cond_broadcast(&cond_rem);
     pthread_mutex_unlock(&mutex);
 }
@@ -181,16 +185,22 @@ int main (int argc, char *argv[]) {
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
     resultados = (long double *) malloc(sizeof(long double) * nthreads);
     proximo = (int *) malloc(sizeof(int) * nthreads);
+    out = (int *) malloc(sizeof(int) * nthreads);
+    in = (int *) malloc(sizeof(int) * nthreads);
+
 
     for(i = 0; i < nthreads; i++) {
         proximo[i] = 0;
+        out[i] = 0;
+        in[i] = 0;
     }
 
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond_ins, NULL);
     pthread_cond_init(&cond_rem, NULL);
 
-    buffer[0][proximo[0]] = entrada;
+    buffer[0][in[0]] = entrada;
+    in[0]++;
     proximo[0]++;
 
     GET_TIME(tempoFim);
