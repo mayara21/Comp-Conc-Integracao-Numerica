@@ -4,6 +4,8 @@
 #include <math.h>
 #include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
 
+
+long double (*funcao)(long double);
 long double erroPermitido;
 
 // funcao para calculo do ponto medio entre dois pontos a e b
@@ -12,7 +14,7 @@ long double pegarPontoMedio(long double inicio, long double fim) {
 }
 
 // funcao recursiva para integracao numerica usando regra do ponto medio/metodo do retangulo
-long double integracaoRetangular(long double inicio, long double fim, long double (*funcao)(long double)) {
+long double integracaoRetangular(long double inicio, long double fim) {
     long double meio;
     long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
@@ -31,14 +33,14 @@ long double integracaoRetangular(long double inicio, long double fim, long doubl
     erro = fabsl(areaTotal - (areaEsq + areaDir));
     // caso essa diferenca seja superior ao erro permitido, calcula-se a area dos intervalos [inicio, meio] e [meio, fim]
     if(erro > erroPermitido) {
-        areaTotal = integracaoRetangular(inicio, meio, funcao) + integracaoRetangular(meio, fim, funcao); // sendo a nova area "maior" a soma dessas duas areas
+        areaTotal = integracaoRetangular(inicio, meio) + integracaoRetangular(meio, fim); // sendo a nova area "maior" a soma dessas duas areas
     }
     // do contrario, retorna o valor atual da area total
     return areaTotal;
 }
 
 int main (int argc, char *argv[]) {
-    long double (*funcao)(long double); 
+    long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7};
     long double integral; // variavel para armazenar valor calculado da integral da funcao
     long double inicio, fim;
     char escolha[2];
@@ -67,35 +69,38 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
-        // determinar qual funcao foi escolhida
-        switch (escolha[1]) {
-            case '1':
-                funcao = &f1;
-                break;
-            case '2':
-                funcao = &f2;
-                break;
-            case '3':
-                funcao = &f3;
-                break;
-            case '4':
-                funcao = &f4;
-                break;
-            case '5':
-                funcao = &f5;
-                break;
-            case '6':
-                funcao = &f6;
-                break;
-            case '7':
-                funcao = &f7;
-                break;
-        }
-
+        funcao = funcoes[(escolha[1] - '0') - 1];
         break;
-    }
 
-    integral = integracaoRetangular(inicio, fim, funcao);
+        // determinar qual funcao foi escolhida
+        // switch (escolha[1]) {
+        //     case '1':
+        //         funcao = &f1;
+        //         break;
+        //     case '2':
+        //         funcao = &f2;
+        //         break;
+        //     case '3':
+        //         funcao = &f3;
+        //         break;
+        //     case '4':
+        //         funcao = &f4;
+        //         break;
+        //     case '5':
+        //         funcao = &f5;
+        //         break;
+        //     case '6':
+        //         funcao = &f6;
+        //         break;
+        //     case '7':
+        //         funcao = &f7;
+        //         break;
+        // }
+        //
+        // break;
+     }
+
+    integral = integracaoRetangular(inicio, fim);
     printf("Valor aproximado da Integral da funcao: %Lf\n", integral);
 
     return 0;
