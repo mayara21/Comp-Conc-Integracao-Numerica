@@ -145,8 +145,6 @@ int main (int argc, char *argv[]) {
     erroPermitido = strtold(argv[3], NULL);
     nthreads = atoi(argv[4]);
 
-    printf("Entrada: %Lf %Lf\n", entrada.inicio, entrada.fim);
-
     // loop para forcar usuario a escolher uma funcao dentre as disponiveis
     while (1) {
         printf("Escolha a funcao a ser integrada:\n");
@@ -176,7 +174,6 @@ int main (int argc, char *argv[]) {
     buffer[proximo] = entrada;
     proximo++;
 
-    printf("Buffer: %Lf %Lf\n", buffer[0].inicio, buffer[0].fim);
     //Criar threads
     for(i = 0; i < nthreads; i++) {
         tid = malloc(sizeof(int)); if(tid == NULL) return -1;
@@ -189,16 +186,14 @@ int main (int argc, char *argv[]) {
     for(i = 0; i < nthreads; i++) {
         pthread_join(threads[i], NULL);
     }
+
     // fazer main somar resultados
     integral = 0;
     for(i = 0; i < nthreads; i++) {
         integral += resultados[i];
     }
 
-    printf("Valor aproximado da Integral da funcao: %Lf\n", integral);
-    // rezar pra nao ficar muito ruim e ter que arranjar alguma forma de ordenar a soma dos floats;
-
-    //dar free no necessario
+    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
 
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond_ins);
