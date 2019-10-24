@@ -91,7 +91,7 @@ void fazMagia(Intervalo intervalo, int id) {
         Intervalo temp;
         temp.inicio = inicio;
         temp.fim = meio;
-        insereBuffer(temp);
+        fazMagia(temp, id);
         temp.inicio = meio;
         temp.fim = fim;
         insereBuffer(temp);
