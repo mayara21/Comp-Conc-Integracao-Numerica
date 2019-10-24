@@ -6,7 +6,8 @@
 #include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
 #include "../timer.h"
 
-#define TAM 10000
+#define TAM 1000000
+#define MAX_THREADS 8
 
 typedef struct _Intervalo {
     long double inicio;
@@ -18,19 +19,26 @@ pthread_cond_t cond_ins, cond_rem;
 long double (*funcao)(long double);
 long double *resultados;
 long double erroPermitido;
-Intervalo buffer[TAM];
-int proximo = 0;
+Intervalo buffer[MAX_THREADS][TAM];
+int *proximo;
 int threadsTrabalhando = 0;
 int nthreads;
 
-Intervalo removeBuffer() {
+int algumProximo() {
+    for(int i = 0; i < nthreads; i++) {
+        if(proximo[i] != 0) return 1;
+    }
+    return 0;
+}
+
+Intervalo removeBuffer(int id) {
     Intervalo retorno;
 
     pthread_mutex_lock(&mutex);
     threadsTrabalhando++;
-    while(proximo == 0) {
+    while(proximo[id] == 0) {
         threadsTrabalhando--;
-        if(threadsTrabalhando == 0) {
+        if(threadsTrabalhando == 0 && !algumProximo()) {
             retorno.inicio = 0;
             retorno.fim = 0;
             pthread_cond_broadcast(&cond_rem);
@@ -41,23 +49,22 @@ Intervalo removeBuffer() {
         threadsTrabalhando++;
     }
 
-    retorno = buffer[proximo - 1];
-    proximo--;
+    retorno = buffer[id][proximo[id] - 1];
+    proximo[id]--;
     pthread_cond_broadcast(&cond_ins);
     pthread_mutex_unlock(&mutex);
 
     return retorno;
 }
 
-void insereBuffer(Intervalo intervalo) {
+void insereBuffer(Intervalo intervalo, int id) {
     pthread_mutex_lock(&mutex);
-    while(proximo + 1 >= TAM) {
-        printf("Esperando\n");
+    while(proximo[id] + 1 >= TAM) {
         pthread_cond_wait(&cond_ins, &mutex);
     }
 
-    buffer[proximo] = intervalo;
-    proximo++;
+    buffer[id][proximo[id]] = intervalo;
+    proximo[id]++;
     pthread_cond_broadcast(&cond_rem);
     pthread_mutex_unlock(&mutex);
 }
@@ -72,6 +79,7 @@ void fazMagia(Intervalo intervalo, int id) {
     long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
     long double erro;
+    int tid;
 
     inicio = intervalo.inicio;
     fim = intervalo.fim;
@@ -94,10 +102,12 @@ void fazMagia(Intervalo intervalo, int id) {
         fazMagia(temp, id);
         temp.inicio = meio;
         temp.fim = fim;
-        insereBuffer(temp);
+        tid = (id + 1) % nthreads;
+        insereBuffer(temp, tid);
     }
 
     else resultados[id] += areaTotal;
+
 }
 
 void *seiLa(void *args) {
@@ -106,14 +116,14 @@ void *seiLa(void *args) {
 
     while(1) {
         pthread_mutex_lock(&mutex);
-        if(proximo == 0 && threadsTrabalhando == 0) {
+        if(!algumProximo() && threadsTrabalhando == 0) {
             pthread_cond_broadcast(&cond_rem);
             pthread_mutex_unlock(&mutex);
             break;
         }
         pthread_mutex_unlock(&mutex);
 
-        intervalo = removeBuffer();
+        intervalo = removeBuffer(id);
         if(intervalo.inicio == 0 && intervalo.fim == 0) {
             break;
         }
@@ -170,13 +180,18 @@ int main (int argc, char *argv[]) {
     GET_TIME(tempoInicio);
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
     resultados = (long double *) malloc(sizeof(long double) * nthreads);
+    proximo = (int *) malloc(sizeof(int) * nthreads);
+
+    for(i = 0; i < nthreads; i++) {
+        proximo[i] = 0;
+    }
 
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond_ins, NULL);
     pthread_cond_init(&cond_rem, NULL);
 
-    buffer[proximo] = entrada;
-    proximo++;
+    buffer[0][proximo[0]] = entrada;
+    proximo[0]++;
 
     GET_TIME(tempoFim);
 
@@ -210,6 +225,7 @@ int main (int argc, char *argv[]) {
     pthread_cond_destroy(&cond_rem);
 
     free(threads);
+    free(proximo);
     free(resultados);
     GET_TIME(tempoFim);
     tempoFinalizacao = tempoFim - tempoInicio;
