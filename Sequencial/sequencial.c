@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include <pthread.h> // include necessario para poder utilizar o timer.h
+#include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "../timer.h"
 
 
 long double (*funcao)(long double);
@@ -43,6 +45,7 @@ int main (int argc, char *argv[]) {
     long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7};
     long double integral; // variavel para armazenar valor calculado da integral da funcao
     long double inicio, fim;
+    double tempoInicio, tempoFim, tempoProcessamento;
     char escolha[2];
 
     if(argc < 4) {
@@ -73,8 +76,13 @@ int main (int argc, char *argv[]) {
         break;
      }
 
+    GET_TIME(tempoInicio);
     integral = integracaoRetangular(inicio, fim);
+    GET_TIME(tempoFim);
+
+    tempoProcessamento = tempoFim - tempoInicio;
     printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
+    printf("Tempo de processamento: %lf\n", tempoProcessamento);
 
     return 0;
 }
