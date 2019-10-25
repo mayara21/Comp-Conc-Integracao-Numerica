@@ -5,8 +5,8 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
-#include "timer.h" // funcoes para calculo de tempo
+#include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "../timer.h" // funcoes para calculo de tempo
 
 #define TAM 100000 // tamanho maximo para a pilha de tarefas usa-se um valor alto para evitar retencao por pilha
 
