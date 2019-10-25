@@ -260,7 +260,7 @@ int main (int argc, char *argv[]) {
     printf("Tempo de processamento: %lf\n", tempoProcessamento);
     printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
 
-    printf("Distribuicao de tarefas entre as threads: ")
+    printf("Distribuicao de tarefas entre as threads: ");
     for(i = 0; i < nthreads; i++) {
         printf("%d ", contadorBalanceamento[i]);
     }
