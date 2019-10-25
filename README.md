@@ -1,4 +1,4 @@
-# Comp-Conc-Integracao-Numerica
+# Computação Concorrente: Integração Numérica usando Métodos dos Retângulos
 
 ## Pastas e Arquivos:
 **timer.h:** funcoes referente à medição de tempo\
