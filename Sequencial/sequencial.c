@@ -6,7 +6,6 @@
 #include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
 #include "../timer.h"
 
-
 long double (*funcao)(long double);
 long double erroPermitido;
 
@@ -42,39 +41,31 @@ long double integracaoRetangular(long double inicio, long double fim) {
 }
 
 int main (int argc, char *argv[]) {
-    long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7};
+    long double (*funcoes[7])(long double) = {&f1, &f2, &f3, &f4, &f5, &f6, &f7}; // vetor com todas as possibilidades de funcoes
     long double integral; // variavel para armazenar valor calculado da integral da funcao
     long double inicio, fim;
     double tempoInicio, tempoFim, tempoProcessamento;
-    char escolha[2];
+    char *escolha;
 
-    if(argc < 4) {
-        printf("<inicio do intervalo> <fim do intervalo> <erro permitido>\n");
+    if(argc < 5) {
+        printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <funcao a ser integrada>\n");
+        printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
         exit(-1);
     }
 
     inicio = strtold(argv[1], NULL);
     fim = strtold(argv[2], NULL);
     erroPermitido = strtold(argv[3], NULL);
+    escolha = argv[4];
 
-    // loop para forcar usuario a escolher uma funcao dentre as disponiveis
-    while (1) {
-        printf("Escolha a funcao a ser integrada:\n");
-        printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
+    // condicional para forcar o usuario a escolher uma funcao valida
+    if(escolha[0] != 'f' || escolha[1] > '7' || escolha[1] < '1') {
+        printf("Insira uma funcao valida\n");
+        exit(-1);
+    }
 
-        scanf("%s", escolha);
-
-        // checagens de validacao da escolha do usuario
-        if (escolha[0] != 'f') {
-            continue;
-        }
-        if (escolha[1] > '7' || escolha[1] < '1') {
-            continue;
-        }
-
-        funcao = funcoes[(escolha[1] - '0') - 1];
-        break;
-     }
+    // operacao para atribuir a funcao global a funcao escolhida
+    funcao = funcoes[(escolha[1] - '0') - 1];
 
     GET_TIME(tempoInicio);
     integral = integracaoRetangular(inicio, fim);

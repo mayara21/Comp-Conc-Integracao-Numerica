@@ -136,36 +136,28 @@ int main (int argc, char *argv[]) {
     //long double inicio, fim;
     double tempoInicio, tempoFim, tempoInicializacao, tempoProcessamento, tempoFinalizacao;
     int i, *tid;
-    char escolha[2];
+    char *escolha;
 
-    if(argc < 5) {
-        printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <numero de threads>\n");
-        exit(-1);
-    }
+    if(argc < 6) {
+            printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <numero de threads> <funcao a ser integrada>\n");
+            printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
+            exit(-1);
+        }
 
     entrada.inicio = strtold(argv[1], NULL);
     entrada.fim = strtold(argv[2], NULL);
     erroPermitido = strtold(argv[3], NULL);
     nthreads = atoi(argv[4]);
+    escolha = argv[5];
 
-    // loop para forcar usuario a escolher uma funcao dentre as disponiveis
-    while (1) {
-        printf("Escolha a funcao a ser integrada:\n");
-        printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
-
-        scanf("%s", escolha);
-
-        // checagens de validacao da escolha do usuario
-        if (escolha[0] != 'f') {
-            continue;
-        }
-        if (escolha[1] > '7' || escolha[1] < '1') {
-            continue;
-        }
-
-        funcao = funcoes[(escolha[1] - '0') - 1];
-        break;
+    // condicional para forcar o usuario a escolher uma funcao valida
+    if(escolha[0] != 'f' || escolha[1] > '7' || escolha[1] < '1') {
+        printf("Insira uma funcao valida\n");
+        exit(-1);
     }
+
+    // operacao para atribuir a funcao global a funcao escolhida
+    funcao = funcoes[(escolha[1] - '0') - 1];
 
     GET_TIME(tempoInicio);
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
