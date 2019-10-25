@@ -23,6 +23,7 @@ long double (*funcao)(long double); // funcao global para facilitar a passagem d
 long double *resultados; // vetor para armazenamento dos resultados obtidos por cada thread
 long double erroPermitido;
 Intervalo buffer[TAM]; // buffer de uma pilha para armazenar os intervalos a serem processados
+int contadorBalanceamento[MAX_THREADS] = {0, 0, 0, 0, 0, 0, 0, 0}; // vetor para contar quantos intervalos cada thread processou
 int proximo = 0; // variavel para manter controle da proxima posicao na pilha
 int threadsTrabalhando = 0;
 int nthreads;
@@ -79,6 +80,8 @@ void integracaoRetangular(Intervalo intervalo, int id) {
     long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
     long double erro;
+
+    contadorBalanceamento[id]++;
 
     inicio = intervalo.inicio;
     fim = intervalo.fim;
@@ -228,6 +231,11 @@ int main (int argc, char *argv[]) {
     printf("Tempo de inicializacao: %lf\n", tempoInicializacao);
     printf("Tempo de processamento: %lf\n", tempoProcessamento);
     printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
+
+    for(i = 0; i < nthreads; i++) {
+        printf("%d ", contadorBalanceamento[i]);
+    }
+    printf("\n");
 
     pthread_exit(NULL);
 
