@@ -5,10 +5,11 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
-#include "timer.h" // funcoes para calculo de tempo
+#include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "../timer.h" // funcoes para calculo de tempo
 
 #define TAM 100000 // tamanho maximo para a pilha de tarefas usa-se um valor alto para evitar retencao por pilha
+#define MAX_THREADS 8
 
 // criacao de uma struct para facilitar a passagem de informacao sobre intervalos (inicio e fim)
 typedef struct _Intervalo {
@@ -232,6 +233,7 @@ int main (int argc, char *argv[]) {
     printf("Tempo de processamento: %lf\n", tempoProcessamento);
     printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
 
+    printf("Distribuicao de tarefas entre as threads: ")
     for(i = 0; i < nthreads; i++) {
         printf("%d ", contadorBalanceamento[i]);
     }
