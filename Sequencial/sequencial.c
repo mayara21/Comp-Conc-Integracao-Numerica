@@ -73,8 +73,10 @@ int main (int argc, char *argv[]) {
     GET_TIME(tempoFim);
 
     tempoProcessamento = tempoFim - tempoInicio;
-    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
-    printf("Tempo de processamento: %lf\n", tempoProcessamento);
+   //printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
+   // printf("Tempo de processamento: %lf\n", tempoProcessamento);
 
+    printf("%.15Lf,", integral);
+    printf("%lf\n", tempoProcessamento);
     return 0;
 }
