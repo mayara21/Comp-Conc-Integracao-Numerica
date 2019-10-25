@@ -228,16 +228,16 @@ int main (int argc, char *argv[]) {
     GET_TIME(tempoFim);
     tempoFinalizacao = tempoFim - tempoInicio;
 
-    printf("Valor aproximado da Integral da funcao: %.15Lf\n", integral);
-    printf("Tempo de inicializacao: %lf\n", tempoInicializacao);
-    printf("Tempo de processamento: %lf\n", tempoProcessamento);
-    printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
+    printf("%.15Lf\n", integral);
+//    printf("Tempo de inicializacao: %lf\n", tempoInicializacao);
+    printf("%lf\n", tempoProcessamento);
+  //  printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
 
-    printf("Distribuicao de tarefas entre as threads: ");
+   /* printf("Distribuicao de tarefas entre as threads: ");
     for(i = 0; i < nthreads; i++) {
         printf("%d ", contadorBalanceamento[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
     pthread_exit(NULL);
 
