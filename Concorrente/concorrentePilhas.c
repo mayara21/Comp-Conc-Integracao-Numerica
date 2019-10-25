@@ -3,11 +3,10 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
-#include "../timer.h"
+#include "funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
+#include "timer.h"
 
-#define TAM 1000000
-#define MAX_THREADS 8
+#define TAM 10000
 
 typedef struct _Intervalo {
     long double inicio;
@@ -19,28 +18,19 @@ pthread_cond_t cond_ins, cond_rem;
 long double (*funcao)(long double);
 long double *resultados;
 long double erroPermitido;
-Intervalo buffer[MAX_THREADS][TAM];
-int *proximo;
-int *out;
-int *in;
+Intervalo buffer[TAM];
+int proximo = 0;
 int threadsTrabalhando = 0;
 int nthreads;
 
-int algumProximo() {
-    for(int i = 0; i < nthreads; i++) {
-        if(proximo[i] != 0) return 1;
-    }
-    return 0;
-}
-
-Intervalo removeBuffer(int id) {
+Intervalo removeBuffer() {
     Intervalo retorno;
 
     pthread_mutex_lock(&mutex);
     threadsTrabalhando++;
-    while(proximo[id] == 0) {
+    while(proximo == 0) {
         threadsTrabalhando--;
-        if(threadsTrabalhando == 0 && !algumProximo()) {
+        if(threadsTrabalhando == 0) {
             retorno.inicio = 0;
             retorno.fim = 0;
             pthread_cond_broadcast(&cond_rem);
@@ -51,24 +41,23 @@ Intervalo removeBuffer(int id) {
         threadsTrabalhando++;
     }
 
-    retorno = buffer[id][out[id]];
-    proximo[id]--;
-    out[id] = (out[id] + 1) % TAM;
+    retorno = buffer[proximo - 1];
+    proximo--;
     pthread_cond_broadcast(&cond_ins);
     pthread_mutex_unlock(&mutex);
 
     return retorno;
 }
 
-void insereBuffer(Intervalo intervalo, int id) {
+void insereBuffer(Intervalo intervalo) {
     pthread_mutex_lock(&mutex);
-    while(proximo[id] + 1 >= TAM) {
+    while(proximo + 1 >= TAM) {
+        printf("Esperando\n");
         pthread_cond_wait(&cond_ins, &mutex);
     }
 
-    buffer[id][in[id]] = intervalo;
-    proximo[id]++;
-    in[id] = (in[id] + 1) % TAM;
+    buffer[proximo] = intervalo;
+    proximo++;
     pthread_cond_broadcast(&cond_rem);
     pthread_mutex_unlock(&mutex);
 }
@@ -83,7 +72,6 @@ void fazMagia(Intervalo intervalo, int id) {
     long double alturaTotal, alturaEsq, alturaDir; // alturas calculadas a partir dos pontos medios dos intervalos
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
     long double erro;
-    int tid;
 
     inicio = intervalo.inicio;
     fim = intervalo.fim;
@@ -106,12 +94,10 @@ void fazMagia(Intervalo intervalo, int id) {
         fazMagia(temp, id);
         temp.inicio = meio;
         temp.fim = fim;
-        tid = (id + 1) % nthreads;
-        insereBuffer(temp, tid);
+        insereBuffer(temp);
     }
 
     else resultados[id] += areaTotal;
-
 }
 
 void *seiLa(void *args) {
@@ -120,14 +106,14 @@ void *seiLa(void *args) {
 
     while(1) {
         pthread_mutex_lock(&mutex);
-        if(!algumProximo() && threadsTrabalhando == 0) {
+        if(proximo == 0 && threadsTrabalhando == 0) {
             pthread_cond_broadcast(&cond_rem);
             pthread_mutex_unlock(&mutex);
             break;
         }
         pthread_mutex_unlock(&mutex);
 
-        intervalo = removeBuffer(id);
+        intervalo = removeBuffer();
         if(intervalo.inicio == 0 && intervalo.fim == 0) {
             break;
         }
@@ -150,10 +136,11 @@ int main (int argc, char *argv[]) {
     //long double inicio, fim;
     double tempoInicio, tempoFim, tempoInicializacao, tempoProcessamento, tempoFinalizacao;
     int i, *tid;
-    char escolha[2];
+    char *escolha;
 
-    if(argc < 5) {
-        printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <numero de threads>\n");
+    if(argc < 6) {
+        printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <numero de threads> <funcao a ser integrada>\n");
+        printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
         exit(-1);
     }
 
@@ -161,47 +148,27 @@ int main (int argc, char *argv[]) {
     entrada.fim = strtold(argv[2], NULL);
     erroPermitido = strtold(argv[3], NULL);
     nthreads = atoi(argv[4]);
+    escolha = argv[5];
 
-    // loop para forcar usuario a escolher uma funcao dentre as disponiveis
-    while (1) {
-        printf("Escolha a funcao a ser integrada:\n");
-        printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
-
-        scanf("%s", escolha);
-
-        // checagens de validacao da escolha do usuario
-        if (escolha[0] != 'f') {
-            continue;
-        }
-        if (escolha[1] > '7' || escolha[1] < '1') {
-            continue;
-        }
-
-        funcao = funcoes[(escolha[1] - '0') - 1];
-        break;
+    // condicional para forcar o usuario a escolher uma funcao valida
+    if(escolha[0] != 'f' || escolha[1] > '7' || escolha[1] < '1') {
+        printf("Insira uma funcao valida\n");
+        exit(-1);
     }
+
+    // operacao para atribuir a funcao global a funcao escolhida
+    funcao = funcoes[(escolha[1] - '0') - 1];
 
     GET_TIME(tempoInicio);
     threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
     resultados = (long double *) malloc(sizeof(long double) * nthreads);
-    proximo = (int *) malloc(sizeof(int) * nthreads);
-    out = (int *) malloc(sizeof(int) * nthreads);
-    in = (int *) malloc(sizeof(int) * nthreads);
-
-
-    for(i = 0; i < nthreads; i++) {
-        proximo[i] = 0;
-        out[i] = 0;
-        in[i] = 0;
-    }
 
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&cond_ins, NULL);
     pthread_cond_init(&cond_rem, NULL);
 
-    buffer[0][in[0]] = entrada;
-    in[0]++;
-    proximo[0]++;
+    buffer[proximo] = entrada;
+    proximo++;
 
     GET_TIME(tempoFim);
 
@@ -235,8 +202,8 @@ int main (int argc, char *argv[]) {
     pthread_cond_destroy(&cond_rem);
 
     free(threads);
-    free(proximo);
     free(resultados);
+
     GET_TIME(tempoFim);
     tempoFinalizacao = tempoFim - tempoInicio;
 
