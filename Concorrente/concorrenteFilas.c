@@ -23,6 +23,7 @@ long double *resultados; // vetor para armazenamento dos resultados obtidos por 
 long double erroPermitido;
 Intervalo buffer[MAX_THREADS][TAM]; // buffer contendo as filas para cada thread em linhas correspondentes ao id delas (optou-se por uma matriz estatica com linhas = MAX_THREADS para simplificacao)
 // usa-se uma fila para garantir consistencia na ordem que as areas dos intervalos sao calculadas
+int contadorBalanceamento[MAX_THREADS] = {0, 0, 0, 0, 0, 0, 0, 0}; // vetor para contar quantos intervalos cada thread processou
 int *contadoresBuffers; // vetor para cuidar do quao cheio cada fila esta
 int *out; // vetor para manter controle das variaveis de saida das filas
 int *in; // vetor para manter controle das variaveis de entrada das filas
@@ -93,6 +94,8 @@ void integracaoRetangular(Intervalo intervalo, int id) {
     long double areaTotal, areaEsq, areaDir; // areas dos retangulos
     long double erro;
     int tid;
+
+    contadorBalanceamento[id]++;
 
     inicio = intervalo.inicio;
     fim = intervalo.fim;
@@ -256,6 +259,12 @@ int main (int argc, char *argv[]) {
     printf("Tempo de inicializacao: %lf\n", tempoInicializacao);
     printf("Tempo de processamento: %lf\n", tempoProcessamento);
     printf("Tempo de finalizacao: %lf\n", tempoFinalizacao);
+
+    printf("Distribuicao de tarefas entre as threads: ")
+    for(i = 0; i < nthreads; i++) {
+        printf("%d ", contadorBalanceamento[i]);
+    }
+    printf("\n");
 
     pthread_exit(NULL);
 
