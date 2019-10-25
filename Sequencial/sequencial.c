@@ -4,9 +4,9 @@
 #include <math.h>
 #include <pthread.h> // include necessario para poder utilizar o timer.h
 #include "../funcoes.h" // definiu-se as funcoes a serem usadas em um outro arquivo
-#include "../timer.h"
+#include "../timer.h" // funcoes para calculo de tempo
 
-long double (*funcao)(long double);
+long double (*funcao)(long double); // funcao global para facilitar a passagem da funcao a ser integrada
 long double erroPermitido;
 
 // funcao para calculo do ponto medio entre dois pontos a e b
@@ -47,6 +47,7 @@ int main (int argc, char *argv[]) {
     double tempoInicio, tempoFim, tempoProcessamento;
     char *escolha;
 
+    // forcar usuario a escolher um intervalo, erro e a funcao
     if(argc < 5) {
         printf("<inicio do intervalo> <fim do intervalo> <erro permitido> <funcao a ser integrada>\n");
         printf("(f1) f(x) = 1 + x\n(f2) f(x) = √(1 − xˆ2), −1 < x < 1\n(f3) f(x) = √(1 + xˆ4)\n(f4) f(x) = sen(xˆ2)\n(f5) f(x) = cos(eˆ(-x))\n(f6) f(x) = cos(eˆ(-x)) * x\n(f7) f(x) = cos(eˆ(-x)) * ((0.005 * xˆ3) + 1)\n");
