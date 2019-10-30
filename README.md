@@ -20,3 +20,5 @@
 **sequencial:** ./sequencial \<inicio do intervalo> \<fim do intervalo> \<erro permitido> \<funcao a ser integrada>\
 **concorrenteFilas:** ./concorrenteFilas \<inicio do intervalo> \<fim do intervalo> \<erro permitido> \<numero de threads> \<funcao a ser integrada>\
 **concorrentePilhas:** ./concorrentePilhas \<inicio do intervalo> \<fim do intervalo> \<erro permitido> \<numero de threads> \<funcao a ser integrada>
+
+**Relatório:** https://docs.google.com/document/d/119KuU4bECe1qh7qnto_9N2dfujuebG6Smiz0lFboDlY/edit?usp=sharing
